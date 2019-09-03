@@ -12,26 +12,6 @@ type RuleFilter struct {
 	Rules     []interface{} `json:"rules"`
 }
 
-type Rule2 map[string]interface{}
-
-type Rule struct {
-	ID       string      `json:"id"`
-	Field    string      `json:"field"`
-	Type     string      `json:"type"`
-	Input    string      `json:"input"`
-	Operator string      `json:"operator"`
-	Value    interface{} `json:"value"`
-}
-
-type Rule1 struct {
-	ID       string  `json:"id"`
-	Field    string  `json:"field"`
-	Type     string  `json:"type"`
-	Input    string  `json:"input"`
-	Operator string  `json:"operator"`
-	Value    float64 `json:"value"`
-}
-
 type TransformInfo struct {
 	Op  string `json:"op"`
 	Sep string `json:"sep"`
