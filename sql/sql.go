@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type RuleFilter struct {
@@ -183,8 +184,18 @@ func generateStringFromRule(r map[string]interface{}) string {
 
 	case "string":
 		t := sqlOperators[op]
-		if 
-		val := fmt.Sprintf(t.Op,  "'" + rval.(string) + "'")
+		var val string
+		if op == "in" || op == "not_in" {
+			s := strings.Split(rval.(string), ",")
+			var qStringArr []string
+			for _, val := range s {
+				qStringArr = append(qStringArr, fmt.Sprintf("'%s'", val))
+			}
+			val = fmt.Sprintf(t.Op, strings.Join(qStringArr, ","))
+		} else {
+			val = fmt.Sprintf(t.Op, "'"+rval.(string)+"'")
+		}
+
 		return fmt.Sprintf("%s %s", r["field"].(string), val)
 
 	default:

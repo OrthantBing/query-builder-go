@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	sql "github.com/OrthantBing/query-builder/sql"
+	sql "github.com/OrthantBing/query-builder-go/sql"
 )
 
 func main() {
