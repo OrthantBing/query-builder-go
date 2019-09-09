@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	jsonFile, err := os.Open("examples/1.json")
+	jsonFile, err := os.Open("examples/2.json")
 
 	if err != nil {
 		fmt.Println(err)

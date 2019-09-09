@@ -2,9 +2,12 @@ package sql
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type RuleFilter struct {
@@ -95,11 +98,12 @@ type Transformer interface {
 	Transform() string
 }
 
-func (rf *RuleFilter) Transform() string {
+func (rf *RuleFilter) Transform() (string, error) {
 	return transform(rf)
 }
 
-func transform(rf *RuleFilter) string {
+func transform(rf *RuleFilter) (string, error) {
+
 	condition := rf.Condition
 	ruleArr := rf.Rules
 	returnString := ""
@@ -107,18 +111,31 @@ func transform(rf *RuleFilter) string {
 		if r, ok := val.(map[string]interface{}); ok {
 			if _, ok := r["condition"]; ok {
 				b, err := json.Marshal(r)
-				fmt.Println(err)
+				if err != nil {
+					return "", err
+				}
 				var rf RuleFilter
 				err = json.Unmarshal(b, &rf)
-				fmt.Println(err)
+				if err != nil {
+					return "", err
+				}
+
+				transformed, err := transform(&rf)
+				if err != nil {
+					return "", err
+				}
 				if returnString == "" {
-					returnString = "(" + transform(&rf) + ")"
+
+					returnString = "(" + transformed + ")"
 				} else {
-					returnString = returnString + " " + condition + " " + "(" + transform(&rf) + ")"
+					returnString = returnString + " " + condition + " " + "(" + transformed + ")"
 				}
 
 			} else {
-				str := generateStringFromRule(r)
+				str, err := generateStringFromRule(r)
+				if err != nil {
+					return "", err
+				}
 				if returnString == "" {
 					returnString = str
 				} else {
@@ -129,11 +146,12 @@ func transform(rf *RuleFilter) string {
 		}
 	}
 
-	return returnString
+	return returnString, nil
 }
 
-func generateStringFromRule(r map[string]interface{}) string {
+func generateStringFromRule(r map[string]interface{}) (string, error) {
 	op := r["operator"].(string)
+	inp := r["input"].(string)
 	rval := r["value"]
 	switch r["type"].(string) {
 	case "integer":
@@ -145,10 +163,11 @@ func generateStringFromRule(r map[string]interface{}) string {
 			v := rval.([]int)
 			val = fmt.Sprintf(t.Op, strconv.Itoa(v[0]), strconv.Itoa(v[1]))
 		} else {
-			val = fmt.Sprintf(t.Op, strconv.FormatFloat(rval.(float64), 'f', -1, 64))
+			//val = fmt.Sprintf(t.Op, strconv.FormatFloat(rval.(float64), 'f', -1, 64))
+			val = fmt.Sprintf(t.Op, rval.(string))
 		}
 
-		return fmt.Sprintf("%s %s", r["field"], val)
+		return fmt.Sprintf("%s %s", r["field"], val), nil
 
 	case "double":
 		t := sqlOperators[op]
@@ -160,25 +179,88 @@ func generateStringFromRule(r map[string]interface{}) string {
 			val = fmt.Sprintf(t.Op, strconv.FormatFloat(rval.(float64), 'f', -1, 64))
 		}
 
-		return fmt.Sprintf("%s %s", r["field"], val)
+		return fmt.Sprintf("%s %s", r["field"], val), nil
 
 	case "string":
 		t := sqlOperators[op]
 		var val string
 		if op == "in" || op == "not_in" {
-			s := strings.Split(rval.(string), ",")
 			var qStringArr []string
-			for _, val := range s {
-				qStringArr = append(qStringArr, fmt.Sprintf("'%s'", val))
+			if inp == "checkbox" {
+				sarr := rval.([]interface{})
+				for _, val := range sarr {
+					qStringArr = append(qStringArr, fmt.Sprintf("'%s'", val.(string)))
+				}
+			} else {
+				s := strings.Split(rval.(string), ",")
+				for _, val := range s {
+					qStringArr = append(qStringArr, fmt.Sprintf("'%s'", val))
+				}
 			}
+
 			val = fmt.Sprintf(t.Op, strings.Join(qStringArr, ","))
 		} else {
 			val = fmt.Sprintf(t.Op, "'"+rval.(string)+"'")
 		}
 
-		return fmt.Sprintf("%s %s", r["field"].(string), val)
+		return fmt.Sprintf("%s %s", r["field"].(string), val), nil
 
+	case "boolean":
+		t := sqlOperators[op]
+		var val string
+		if rval.(string) == "true" {
+			val = fmt.Sprintf(t.Op, "1")
+		} else if rval.(string) == "false" {
+			val = fmt.Sprintf(t.Op, "0")
+		}
+		return fmt.Sprintf("%s %s", r["field"].(string), val), nil
+
+	case "datetime":
+		t := sqlOperators[op]
+		var val string
+		if op == "between" || op == "not_between" {
+			v := rval.([]interface{})
+
+			timeStr := []string{}
+			for _, data := range v {
+				validtime, err := is24HHMMSS(data.(string))
+				if err != nil {
+					return "", err
+				}
+				if validtime {
+					timeStr = append(timeStr, fmt.Sprintf("%s %s", time.Now().Format("2006-02-01"), data.(string)))
+				} else {
+					return "", errors.New("Invalid Time format")
+				}
+
+			}
+			val = fmt.Sprintf(t.Op, "'"+timeStr[0]+"'", "'"+timeStr[1]+"'")
+
+		} else {
+			validtime, err := is24HHMMSS(rval.(string))
+			if err != nil {
+				return "", err
+			}
+			if validtime {
+				timestr := fmt.Sprintf("%s %s", time.Now().Format("2006-02-01"), rval.(string))
+				val = fmt.Sprintf(t.Op, "'"+timestr+"'")
+
+			} else {
+				return "", errors.New("Invalid timestring")
+			}
+		}
+
+		return fmt.Sprintf("%s %s", r["field"], val), nil
 	default:
-		return ""
+		return "", nil
 	}
+}
+
+func is24HHMMSS(dateStr string) (bool, error) {
+	r, err := regexp.Compile("[0-9]{2}:[0-9]{2}:[0-9]{2}")
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+	return r.MatchString(dateStr), nil
 }
