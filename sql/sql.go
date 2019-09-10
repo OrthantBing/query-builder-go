@@ -31,11 +31,11 @@ var sqlOperators = SQLOperators{
 		Op: "!= %s",
 	},
 	"in": TransformInfo{
-		Op:  "IN(%s)",
+		Op:  "IN (%s)",
 		Sep: ", ",
 	},
 	"not_in": TransformInfo{
-		Op:  "NOT IN(%s)",
+		Op:  "NOT IN (%s)",
 		Sep: ", ",
 	},
 	"less": TransformInfo{
@@ -57,27 +57,27 @@ var sqlOperators = SQLOperators{
 		Op: "NOT BETWEEN %s AND %s",
 	},
 	"begins_with": TransformInfo{
-		Op:  "LIKE(%s)",
+		Op:  "LIKE(%s%%)",
 		Mod: "{0}%",
 	},
 	"not_begins_with": TransformInfo{
-		Op:  "LIKE(%s)",
+		Op:  "LIKE(%s%%)",
 		Mod: "{0}%",
 	},
 	"contains": TransformInfo{
-		Op:  "LIKE(%s)",
+		Op:  "LIKE(%%%s%%)",
 		Mod: "%{0}%",
 	},
 	"not_contains": TransformInfo{
-		Op:  "NOT LIKE(%s)",
+		Op:  "NOT LIKE(%%%s%%)",
 		Mod: "%{0}%",
 	},
 	"ends_with": TransformInfo{
-		Op:  "LIKE(%s)",
+		Op:  "LIKE(%%%s)",
 		Mod: "%{0}",
 	},
 	"not_ends_with": TransformInfo{
-		Op:  "NOT LIKE(%s)",
+		Op:  "NOT LIKE(%%%s)",
 		Mod: "%{0}",
 	},
 	"is_empty": TransformInfo{
@@ -155,16 +155,29 @@ func generateStringFromRule(r map[string]interface{}) (string, error) {
 	rval := r["value"]
 	switch r["type"].(string) {
 	case "integer":
-		fmt.Println(r["type"])
-		fmt.Println(r["value"])
 		t := sqlOperators[op]
 		var val string
 		if op == "between" || op == "not_between" {
-			v := rval.([]int)
-			val = fmt.Sprintf(t.Op, strconv.Itoa(v[0]), strconv.Itoa(v[1]))
+			v := rval.([]interface{})
+			v0, err := returnString("integer", v[0])
+			if err != nil {
+				return "", err
+			}
+			v1, err := returnString("integer", v[1])
+			if err != nil {
+				return "", err
+			}
+			val = fmt.Sprintf(t.Op, v0, v1)
+			//v := rval.([]int)
+			//val = fmt.Sprintf(t.Op, strconv.Itoa(v[0]), strconv.Itoa(v[1]))
 		} else {
 			//val = fmt.Sprintf(t.Op, strconv.FormatFloat(rval.(float64), 'f', -1, 64))
-			val = fmt.Sprintf(t.Op, rval.(string))
+			v, err := returnString("integer", rval)
+			if err != nil {
+				return "", err
+			}
+			val = fmt.Sprintf(t.Op, v)
+			//val = fmt.Sprintf(t.Op, rval.(string))
 		}
 
 		return fmt.Sprintf("%s %s", r["field"], val), nil
@@ -173,10 +186,26 @@ func generateStringFromRule(r map[string]interface{}) (string, error) {
 		t := sqlOperators[op]
 		var val string
 		if op == "between" || op == "not_between" {
-			v := rval.([]float64)
-			val = fmt.Sprintf(t.Op, strconv.FormatFloat(v[0], 'f', -1, 64), strconv.FormatFloat(v[1], 'f', -1, 64))
+			v := rval.([]interface{})
+			v0, err := returnString("double", v[0])
+			if err != nil {
+				return "", err
+			}
+
+			v1, err := returnString("double", v[1])
+			if err != nil {
+				return "", err
+			}
+			val = fmt.Sprintf(t.Op, v0, v1)
+			//v := rval.([]float64)
+			//val = fmt.Sprintf(t.Op, strconv.FormatFloat(v[0], 'f', -1, 64), strconv.FormatFloat(v[1], 'f', -1, 64))
 		} else {
-			val = fmt.Sprintf(t.Op, strconv.FormatFloat(rval.(float64), 'f', -1, 64))
+			//val = fmt.Sprintf(t.Op, strconv.FormatFloat(rval.(float64), 'f', -1, 64))
+			v, err := returnString("double", rval)
+			if err != nil {
+				return "", err
+			}
+			val = fmt.Sprintf(t.Op, v)
 		}
 
 		return fmt.Sprintf("%s %s", r["field"], val), nil
@@ -188,17 +217,37 @@ func generateStringFromRule(r map[string]interface{}) (string, error) {
 			var qStringArr []string
 			if inp == "checkbox" {
 				sarr := rval.([]interface{})
-				for _, val := range sarr {
-					qStringArr = append(qStringArr, fmt.Sprintf("'%s'", val.(string)))
+				for _, value := range sarr {
+					v, err := returnString("string", value)
+					if err != nil {
+						return "", err
+					}
+					//qStringArr = append(qStringArr, fmt.Sprintf("'%s'", val.(string)))
+					qStringArr = append(qStringArr, fmt.Sprintf("'%s'", v))
 				}
 			} else {
 				s := strings.Split(rval.(string), ",")
-				for _, val := range s {
-					qStringArr = append(qStringArr, fmt.Sprintf("'%s'", val))
+				for _, value := range s {
+					v, err := returnString("string", value)
+					if err != nil {
+						return "", err
+					}
+					qStringArr = append(qStringArr, fmt.Sprintf("'%s'", v))
 				}
 			}
 
-			val = fmt.Sprintf(t.Op, strings.Join(qStringArr, ","))
+			val = fmt.Sprintf(t.Op, strings.Join(qStringArr, ", "))
+		} else if op == "contains" ||
+			op == "not_contains" ||
+			op == "ends_with" ||
+			op == "not_ends_with" ||
+			op == "begins_with" {
+			v, err := returnString("string", rval)
+			if err != nil {
+				return "", err
+			}
+			val = fmt.Sprintf(t.Op, v)
+
 		} else {
 			val = fmt.Sprintf(t.Op, "'"+rval.(string)+"'")
 		}
@@ -263,4 +312,39 @@ func is24HHMMSS(dateStr string) (bool, error) {
 		return false, err
 	}
 	return r.MatchString(dateStr), nil
+}
+
+func returnString(typeinfo string, val interface{}) (string, error) {
+	switch typeinfo {
+	case "string":
+		if rval, ok := val.(string); ok {
+			return fmt.Sprintf("%s", rval), nil
+		}
+	case "integer":
+		if rval, ok := val.(int); ok {
+			return fmt.Sprintf("%d", rval), nil
+		}
+
+		if rval, ok := val.(float64); ok {
+			return strconv.FormatFloat(rval, 'f', -1, 64), nil
+		}
+
+		if rval, ok := val.(string); ok {
+			return fmt.Sprintf("%s", rval), nil
+		}
+	case "double":
+		if rval, ok := val.(float64); ok {
+			return strconv.FormatFloat(rval, 'f', -1, 64), nil
+		}
+
+		if rval, ok := val.(int); ok {
+			return fmt.Sprintf("%d", rval), nil
+		}
+
+		if rval, ok := val.(string); ok {
+			return fmt.Sprintf("%s", rval), nil
+		}
+	}
+
+	return "", fmt.Errorf("Unable to convert %+v to %s", val, typeinfo)
 }
