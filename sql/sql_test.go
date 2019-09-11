@@ -22,7 +22,7 @@ func TestGenerateStringFromRule(t *testing.T) {
 				"operator": "contains",
 				"value":    "Zen",
 			},
-			Output: "Pokemon LIKE(%Zen%)",
+			Output: "Pokemon LIKE '%Zen%' ",
 		},
 		testCase{
 			Input: map[string]interface{}{
@@ -33,7 +33,7 @@ func TestGenerateStringFromRule(t *testing.T) {
 				"operator": "begins_with",
 				"value":    "Zen",
 			},
-			Output: "Pokemon LIKE(Zen%)",
+			Output: "Pokemon LIKE 'Zen%' ",
 		},
 		testCase{
 			Input: map[string]interface{}{
