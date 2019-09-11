@@ -57,27 +57,27 @@ var sqlOperators = SQLOperators{
 		Op: "NOT BETWEEN %s AND %s",
 	},
 	"begins_with": TransformInfo{
-		Op:  "LIKE(%s%%)",
+		Op:  "LIKE '%s%%' ",
 		Mod: "{0}%",
 	},
 	"not_begins_with": TransformInfo{
-		Op:  "LIKE(%s%%)",
+		Op:  "LIKE '%s%%' ",
 		Mod: "{0}%",
 	},
 	"contains": TransformInfo{
-		Op:  "LIKE(%%%s%%)",
+		Op:  "LIKE '%%%s%%' ",
 		Mod: "%{0}%",
 	},
 	"not_contains": TransformInfo{
-		Op:  "NOT LIKE(%%%s%%)",
+		Op:  "NOT LIKE '%%%s%%' ",
 		Mod: "%{0}%",
 	},
 	"ends_with": TransformInfo{
-		Op:  "LIKE(%%%s)",
+		Op:  "LIKE '%%%s' ",
 		Mod: "%{0}",
 	},
 	"not_ends_with": TransformInfo{
-		Op:  "NOT LIKE(%%%s)",
+		Op:  "NOT LIKE '%%%s' ",
 		Mod: "%{0}",
 	},
 	"is_empty": TransformInfo{
