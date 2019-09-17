@@ -65,12 +65,12 @@ var sqlOperators = SQLOperators{
 		Mod: "{0}%",
 	},
 	"contains": TransformInfo{
-		Op:  "LIKE '%%%s%%' ",
-		Mod: "%{0}%",
+		Op:  "IN (%s)",
+		Sep: ", ",
 	},
 	"not_contains": TransformInfo{
-		Op:  "NOT LIKE '%%%s%%' ",
-		Mod: "%{0}%",
+		Op:  "NOT IN (%s)",
+		Sep: ", ",
 	},
 	"ends_with": TransformInfo{
 		Op:  "LIKE '%%%s' ",
@@ -213,7 +213,8 @@ func generateStringFromRule(r map[string]interface{}) (string, error) {
 	case "string":
 		t := sqlOperators[op]
 		var val string
-		if op == "in" || op == "not_in" {
+		if op == "in" || op == "not_in" || op == "contains" ||
+			op == "not_contains" {
 			var qStringArr []string
 			if inp == "checkbox" {
 				sarr := rval.([]interface{})
@@ -237,9 +238,7 @@ func generateStringFromRule(r map[string]interface{}) (string, error) {
 			}
 
 			val = fmt.Sprintf(t.Op, strings.Join(qStringArr, ", "))
-		} else if op == "contains" ||
-			op == "not_contains" ||
-			op == "ends_with" ||
+		} else if op == "ends_with" ||
 			op == "not_ends_with" ||
 			op == "begins_with" {
 			v, err := returnString("string", rval)
