@@ -1,14 +1,41 @@
 package sql
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 	"time"
+
+	"github.com/OrthantBing/query-builder-go/config"
 )
 
 type testCase struct {
 	Input  map[string]interface{}
 	Output string
+}
+
+func TestTransform(t *testing.T) {
+	inpJSON, err := os.Open(fmt.Sprintf("%s/%s", config.TestFilePath, "1.json"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	k := RuleFilter{}
+	jsonParser := json.NewDecoder(inpJSON)
+	if err = jsonParser.Decode(&k); err != nil {
+		t.Error(err)
+	}
+	whereClause, err := k.Transform()
+	if err != nil {
+		t.Error(err)
+	}
+	if whereClause != "price < 10.25 AND (category = 2 OR category = 1 OR (name = 'asasdfasdfdf' AND category = 1))" {
+		t.Errorf("Where clause doesnt match")
+	}
+	fmt.Println(whereClause)
+	t.Log(whereClause)
+
 }
 
 func TestGenerateStringFromRule(t *testing.T) {
