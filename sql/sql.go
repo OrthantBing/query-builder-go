@@ -227,7 +227,12 @@ func generateStringFromRule(r map[string]interface{}) (string, error) {
 					qStringArr = append(qStringArr, fmt.Sprintf("'%s'", v))
 				}
 			} else {
-				s := strings.Split(rval.(string), ",")
+				var s []string
+				if strings.Contains(rval.(string), ",") {
+					s = strings.Split(rval.(string), ",")
+				} else {
+					s = strings.Split(rval.(string), " ")
+				}
 				for _, value := range s {
 					v, err := returnString("string", value)
 					if err != nil {
@@ -317,7 +322,7 @@ func returnString(typeinfo string, val interface{}) (string, error) {
 	switch typeinfo {
 	case "string":
 		if rval, ok := val.(string); ok {
-			return fmt.Sprintf("%s", rval), nil
+			return fmt.Sprintf("%s", strings.TrimSpace(rval)), nil
 		}
 	case "integer":
 		if rval, ok := val.(int); ok {
@@ -329,7 +334,7 @@ func returnString(typeinfo string, val interface{}) (string, error) {
 		}
 
 		if rval, ok := val.(string); ok {
-			return fmt.Sprintf("%s", rval), nil
+			return fmt.Sprintf("%s", strings.TrimSpace(rval)), nil
 		}
 	case "double":
 		if rval, ok := val.(float64); ok {
@@ -341,7 +346,7 @@ func returnString(typeinfo string, val interface{}) (string, error) {
 		}
 
 		if rval, ok := val.(string); ok {
-			return fmt.Sprintf("%s", rval), nil
+			return fmt.Sprintf("%s", strings.TrimSpace(rval)), nil
 		}
 	}
 

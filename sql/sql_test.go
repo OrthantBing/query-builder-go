@@ -47,9 +47,20 @@ func TestGenerateStringFromRule(t *testing.T) {
 				"type":     "string",
 				"input":    "text",
 				"operator": "contains",
-				"value":    "Zen",
+				"value":    "Zen Shaun",
 			},
-			Output: "Pokemon IN ('Zen')",
+			Output: "Pokemon IN ('Zen', 'Shaun')",
+		},
+		testCase{
+			Input: map[string]interface{}{
+				"id":       "Pokemon",
+				"field":    "Pokemon",
+				"type":     "string",
+				"input":    "text",
+				"operator": "contains",
+				"value":    "Zen, Shaun",
+			},
+			Output: "Pokemon IN ('Zen', 'Shaun')",
 		},
 		testCase{
 			Input: map[string]interface{}{
