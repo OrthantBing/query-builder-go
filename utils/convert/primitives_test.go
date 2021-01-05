@@ -3,7 +3,7 @@ package convert_test
 import (
 	"testing"
 
-	"lynk/driver-attendance-lambda/internal/utils/convert"
+	"github.com/OrthantBing/query-builder-go/utils/convert"
 )
 
 func TestGetInteger(t *testing.T) {

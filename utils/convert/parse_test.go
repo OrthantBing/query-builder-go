@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"lynk/driver-attendance-lambda/internal/utils/convert"
+	"github.com/OrthantBing/query-builder-go/utils/convert"
 )
 
 func TestParseInteger(t *testing.T) {

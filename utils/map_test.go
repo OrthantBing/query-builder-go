@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"lynk/driver-attendance-lambda/internal/utils"
+	"github.com/OrthantBing/query-builder-go/utils"
 )
 
 func TestAddMap(t *testing.T) {

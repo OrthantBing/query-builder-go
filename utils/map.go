@@ -1,6 +1,6 @@
 package utils
 
-import "lynk/driver-attendance-lambda/internal/utils/convert"
+import "github.com/OrthantBing/query-builder-go/utils/convert"
 
 // AddMap adds all keys in src to dst map
 // and Returns it the resulting map
