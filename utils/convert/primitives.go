@@ -4,6 +4,7 @@ package convert
 
 // GetInteger Converts interface{} to Int64 if Applicable
 // Otherwise returns Zero Value
+
 func GetInteger(x interface{}) int64 {
 	// Depending on Type, Perform Required Conversion
 	switch x.(type) {
@@ -34,6 +35,15 @@ func GetFloat(x interface{}) float64 {
 	default:
 		return 0
 	}
+}
+func IsString(x interface{}) bool {
+	_, ok := x.(string)
+	return ok
+}
+
+func IsStringSlice(x interface{}) bool {
+	_, ok := x.([]string)
+	return ok
 }
 
 // GetString converts interface{} to String
