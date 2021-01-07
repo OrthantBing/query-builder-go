@@ -2,7 +2,7 @@ package evaluator
 
 import "testing"
 
-func TestString(t *testing.T) {
+func TestTime(t *testing.T) {
 	tests := []struct {
 		name      string
 		condition Condition
@@ -15,12 +15,12 @@ func TestString(t *testing.T) {
 			condition: Condition{
 				ID:       "a",
 				Field:    "a",
-				Type:     "string",
+				Type:     "time",
 				Input:    "text",
 				Operator: "equal",
-				Value:    "Gianlugi Donurumma",
+				Value:    "04:10pm",
 			},
-			input: "Gianlugi Donurumma",
+			input: "2006-01-02T16:10:00Z",
 			mock:  func() {},
 			want: func(b bool, err error) {
 				if err != nil {
@@ -36,12 +36,33 @@ func TestString(t *testing.T) {
 			condition: Condition{
 				ID:       "a",
 				Field:    "a",
-				Type:     "string",
+				Type:     "time",
 				Input:    "text",
 				Operator: "not_equal",
-				Value:    "Gianlugi Donurumma",
+				Value:    "05:10pm",
 			},
-			input: "Gianlugi",
+			input: "2006-01-02T16:10:00Z",
+			mock:  func() {},
+			want: func(b bool, err error) {
+				if err != nil {
+					t.Error(err)
+				}
+				if !b {
+					t.Error("Should return true")
+				}
+			},
+		},
+		{
+			name: "less_than",
+			condition: Condition{
+				ID:       "a",
+				Field:    "a",
+				Type:     "time",
+				Input:    "text",
+				Operator: "less_than",
+				Value:    "05:10pm",
+			},
+			input: "2006-01-02T16:10:00Z",
 			mock:  func() {},
 			want: func(b bool, err error) {
 				if err != nil {
@@ -54,58 +75,16 @@ func TestString(t *testing.T) {
 		},
 
 		{
-			name: "in",
+			name: "between",
 			condition: Condition{
 				ID:       "a",
 				Field:    "a",
-				Type:     "string",
+				Type:     "time",
 				Input:    "text",
-				Operator: "in",
-				Value:    []string{"Gianlugi Donurumma", "Christiano Rolando"},
+				Operator: "between",
+				Value:    []string{"03:10pm", "06:10pm"},
 			},
-			input: "Gianlugi Donurumma",
-			mock:  func() {},
-			want: func(b bool, err error) {
-				if err != nil {
-					t.Error(err)
-				}
-				if !b {
-					t.Error("Should return true")
-				}
-			},
-		},
-		{
-			name: "not_in",
-			condition: Condition{
-				ID:       "a",
-				Field:    "a",
-				Type:     "string",
-				Input:    "text",
-				Operator: "not_in",
-				Value:    []string{"Gianlugi Donurumma", "Christiano Rolando"},
-			},
-			input: "Christian Erickson",
-			mock:  func() {},
-			want: func(b bool, err error) {
-				if err != nil {
-					t.Error(err)
-				}
-				if !b {
-					t.Error("Should return true")
-				}
-			},
-		},
-		{
-			name: "contains",
-			condition: Condition{
-				ID:       "a",
-				Field:    "a",
-				Type:     "string",
-				Input:    "text",
-				Operator: "contains",
-				Value:    "Gianlugi",
-			},
-			input: "Gianlugi Donurumma",
+			input: "2006-01-02T16:10:00Z",
 			mock:  func() {},
 			want: func(b bool, err error) {
 				if err != nil {

@@ -1,62 +1,122 @@
 package evaluator
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
-type RuleFilter struct {
-	Condition string        `json:"condition"`
-	Rules     []interface{} `json:"rules"`
+type Rule struct {
+	Connective string        `json:"condition"`
+	Conditions []interface{} `json:"rules"`
 }
 
-type Evaluator interface {
-	Evaluate() bool
+type Satisfier interface {
+	Satisfy(input interface{}) (bool, error)
 }
 
-func (rf *RuleFilter) Evaluate(payload interface{}) (bool, error) {
-	return evaluate(rf, payload)
+// BinaryLogicalFunc is a function signature for boolean operations
+type binaryLogicalFunc func(bool, bool) bool
+
+var boolLogicalFunc = map[string]binaryLogicalFunc{
+	"AND": func(x, y bool) bool { return x && y },
+	"OR":  func(x, y bool) bool { return x || y },
 }
 
-func generateRuleFilter(r map[string]interface{}) (*RuleFilter, error) {
-	b, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
+func evaluateCondition(rmap map[string]interface{}, input map[string]interface{}) (bool, error) {
+	c := Condition{
+		ID:       rmap["id"].(string),
+		Field:    rmap["field"].(string),
+		Type:     rmap["type"].(string),
+		Operator: rmap["operator"].(string),
+		Value:    rmap["value"].(interface{}),
 	}
-	var rf RuleFilter
-	err = json.Unmarshal(b, &rf)
+
+	cResult, err := c.Evaluate(input[c.Field])
 	if err != nil {
-		return nil, err
+		return false, fmt.Errorf("Error in Evaluation Condition: [%s]: %#v", c, err)
 	}
 
-	return &rf, nil
+	return cResult, nil
+
 }
 
-func evaluate(rf *RuleFilter, payload interface{}) (bool, error) {
-	condition := rf.Condition
-	ruleArr := rf.Rules
-	returnBool := true
+func (r Rule) Satisfy(input map[string]interface{}) (bool, error) {
+	// Empty Filter
+	if len(r.Conditions) == 0 {
+		return true, nil
+	}
 
-	for _, val := range ruleArr {
-		if r, ok := val.(map[string]interface{}); ok {
-			if _, ok := r["condition"]; ok {
-				rf, err := generateRuleFilter(r)
-				if err != nil {
-					return false, err
-				}
+	result := false
+	if r.Connective == "AND" {
+		result = true
+	}
 
-				evaluated, err := evaluate(rf, payload)
-				fmt.Println(evaluated)
-				if err != nil {
-					return false, err
-				}
-
-			} else {
-
-			}
+	logicalFunc := boolLogicalFunc[r.Connective]
+	for i, rule := range r.Conditions {
+		rmap, ok := rule.(map[string]interface{})
+		if !ok {
+			return false, fmt.Errorf("Error in Type Assertion: Rules: %+v", rule)
 		}
-	}
 
-	fmt.Println(condition, returnBool)
-	return false, nil
+		if _, ok := rmap["condition"]; !ok {
+			if cResult, err := evaluateCondition(rmap, input); err == nil {
+				result = logicalFunc(result, cResult)
+			} else {
+				return false, err
+			}
+
+		} else {
+			r := Rule{
+				Connective: rmap["condition"].(string),
+				Conditions: rmap["rules"].([]interface{}),
+			}
+
+			rResult, err := r.Satisfy(input)
+			if err != nil {
+				fmt.Errorf("Error in Evaluating Rule[%d]: %s: %#v", i, r, err)
+				return false, fmt.Errorf("Error in Evaluating Rule[%d]: %s: %#v", i, r, err)
+			}
+			result = logicalFunc(result, rResult)
+			fmt.Printf("After combining Rule: [%s] Result: %t, Result Update: %t\n", r, rResult, result)
+		}
+		fmt.Printf("Result for %s: %t\n", r, result)
+	}
+	return result, nil
+}
+
+// Rule implements Stringer interface
+func (r Rule) String() string {
+	// Thing is we need to unravel the whole recursive rules
+	// into one flattened rule
+	result := fmt.Sprintf("[%s][", r.Connective)
+
+	for i, rule := range r.Conditions {
+		rmap, ok := rule.(map[string]interface{})
+		if !ok {
+			return ""
+		}
+
+		// Check if its a simple condition or a complex rule
+		if _, ok := rmap["condition"]; !ok {
+			c := Condition{
+				ID:       rmap["id"].(string),
+				Field:    rmap["field"].(string),
+				Type:     rmap["type"].(string),
+				Operator: rmap["operator"].(string),
+				Value:    rmap["value"].(interface{}),
+			}
+
+			result += fmt.Sprintf("(Condition: %s)", c)
+			continue
+		}
+
+		// This is a rule
+		r := Rule{
+			Connective: rmap["condition"].(string),
+			Conditions: rmap["rules"].([]interface{}),
+		}
+
+		result += fmt.Sprintf("Rule: [%d] %s", i, r)
+	}
+	result += "]"
+	return result
 }
