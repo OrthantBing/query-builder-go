@@ -32,9 +32,9 @@ jobs:
     - name: Build
       run: go build -v ./...
       env:
-        GOPATH: /home/runner/work/query-builder-go/go
+        GOPATH: /home/runner/work/query-builder-go/query-builder-go/go
 
     - name: Test
       run: go test -v ./...
       env:
-        GOPATH: /home/runner/work/query-builder-go/go
+        GOPATH: /home/runner/work/query-builder-go/query-builder-go/go
