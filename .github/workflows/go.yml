@@ -1,0 +1,40 @@
+name: Go
+
+on:
+  push:
+    branches: [ master, evaluator ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+        path: go/src/github.com/OrthantBing/query-builder-go
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.14
+
+    - name: Debug
+      run: |
+        pwd
+        echo ${HOME}
+        echo ${GITHUB_WORKSPACE}
+        echo ${GOPATH}
+        echo ${GOROOT}
+        
+    - name: Build
+      run: go build -v ./...
+      env:
+        GOPATH: /home/runner/work/query-builder-go/query-builder-go/go
+
+    - name: Test
+      run: go test -v ./...
+      env:
+        GOPATH: /home/runner/work/query-builder-go/query-builder-go/go
